@@ -1,3 +1,4 @@
+// app/(tabs)/profile.jsx
 import {
   SafeAreaView,
   View,
@@ -8,10 +9,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 
 export default function Profile() {
   const { user } = useAuth();
+  const router = useRouter();
   const [selectedTab, setSelectedTab] = useState("All");
 
   // dummy data for now
@@ -25,20 +28,12 @@ export default function Profile() {
     <SafeAreaView className="flex-1 bg-white dark:bg-black">
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <TouchableOpacity
-          onPress={() => {
-            /* goBack() */
-          }}
-        >
+        <TouchableOpacity>
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text className="text-lg font-semibold dark:text-white">Profile</Text>
-        <TouchableOpacity
-          onPress={() => {
-            /* open menu */
-          }}
-        >
-          <Ionicons name="ellipsis-vertical" size={24} color="#111827" />
+        <TouchableOpacity onPress={() => router.push("/menu/")}>
+          <Ionicons name="ellipsis-vertical" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -117,7 +112,6 @@ export default function Profile() {
         </View>
 
         {/* Contributions List */}
-        {/* Replace this hard-coded card with a FlatList over your real data */}
         <View className="bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 mb-4 flex-row items-center">
           <View className="w-10 h-10 bg-gray-300 rounded-lg items-center justify-center mr-3">
             <Ionicons name="musical-notes-outline" size={20} color="#6b7280" />
