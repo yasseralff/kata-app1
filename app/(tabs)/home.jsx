@@ -84,7 +84,7 @@ export default function Home() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ gap: 12 }}
         renderItem={({ item }) => (
-          <Link href={`/detail/`} asChild>
+          <Link href={`/detail?id=${item.id}`} asChild>
             <TouchableOpacity className="w-52 bg-white dark:bg-gray-800 rounded-xl shadow p-3">
               <View className="w-full h-28 bg-gray-100 dark:bg-gray-700 rounded-lg items-center justify-center mb-2">
                 {item.type === "audio" ? (
