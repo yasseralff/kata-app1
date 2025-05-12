@@ -70,11 +70,20 @@ export default function Search() {
             className={twMerge(
               "px-4 py-1 rounded-full border",
               filter === item
-                ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white"
-                : "text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700"
+                ? "bg-black dark:bg-white border-black dark:border-white"
+                : "bg-transparent border-gray-300 dark:border-gray-700"
             )}
           >
-            <Text className="text-sm font-medium">{item}</Text>
+            <Text
+              className={twMerge(
+                "text-sm font-medium",
+                filter === item
+                  ? "text-white dark:text-black"
+                  : "text-gray-700 dark:text-gray-300"
+              )}
+            >
+              {item}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>

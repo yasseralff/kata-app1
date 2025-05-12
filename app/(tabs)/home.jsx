@@ -1,10 +1,15 @@
-import { View, Text, ScrollView, FlatList, Image } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { db } from "../../services/firebase";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { Link } from "expo-router";
-import { TouchableOpacity } from "react-native";
 
 export default function Home() {
   const [stats, setStats] = useState({ audio: 0, text: 0, likes: 0 });
@@ -15,8 +20,8 @@ export default function Home() {
       const snap = await getDocs(collection(db, "contributions"));
       let audio = 0,
         text = 0,
-        likes = 0;
-      let all = [];
+        likes = 0,
+        all = [];
 
       snap.forEach((doc) => {
         const data = doc.data();
@@ -26,8 +31,7 @@ export default function Home() {
         all.push({ id: doc.id, ...data });
       });
 
-      // sort by likes
-      const top = [...all]
+      const top = all
         .sort((a, b) => (b.likes || 0) - (a.likes || 0))
         .slice(0, 5);
 
@@ -80,37 +84,48 @@ export default function Home() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ gap: 12 }}
         renderItem={({ item }) => (
-          <TouchableOpacity className="w-52 bg-white dark:bg-gray-800 rounded-xl shadow p-3">
-            <View className="w-full h-28 bg-gray-100 dark:bg-gray-700 rounded-lg items-center justify-center mb-2">
-              {item.type === "audio" ? (
-                <Ionicons name="volume-high" size={24} color="gray" />
-              ) : (
-                <MaterialIcons name="article" size={24} color="gray" />
-              )}
-            </View>
-            <Text className="font-semibold text-gray-800 dark:text-gray-100">
-              {item.title || "Untitled"}
-            </Text>
-            <View className="flex-row flex-wrap gap-1 my-1">
-              <Text className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                {item.language || "Unknown"}
+          <Link href={`/detail/`} asChild>
+            <TouchableOpacity className="w-52 bg-white dark:bg-gray-800 rounded-xl shadow p-3">
+              <View className="w-full h-28 bg-gray-100 dark:bg-gray-700 rounded-lg items-center justify-center mb-2">
+                {item.type === "audio" ? (
+                  <Ionicons name="volume-high" size={24} color="gray" />
+                ) : (
+                  <MaterialIcons name="article" size={24} color="gray" />
+                )}
+              </View>
+              <Text className="font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                {item.title || "Untitled"}
               </Text>
-              {item.country && (
+              <View className="flex-row flex-wrap gap-1 mb-2">
                 <Text className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                  {item.country}
+                  {item.language || "Unknown"}
                 </Text>
-              )}
-            </View>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              by @{item.username || "anonymous"}
-            </Text>
-            <View className="flex-row items-center gap-1 mt-1">
-              <Feather name="heart" size={14} color="gray" />
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {item.likes || 0}
-              </Text>
-            </View>
-          </TouchableOpacity>
+                {item.country && (
+                  <Text className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
+                    {item.country}
+                  </Text>
+                )}
+              </View>
+              <View className="flex-row items-center justify-between mt-1">
+                <View className="flex-row items-center">
+                  <MaterialIcons name="location-on" size={14} color="#888" />
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                    {item.region
+                      ? `MY ${item.region}`
+                      : item.country
+                      ? `MY ${item.country}`
+                      : ""}
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Feather name="heart" size={14} color="gray" />
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                    {item.likes || 0}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Link>
         )}
       />
 
