@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { Link } from "expo-router";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -32,9 +33,11 @@ export default function Profile() {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text className="text-lg font-semibold dark:text-white">Profile</Text>
-        <TouchableOpacity onPress={() => router.push("/menu/")}>
-          <Ionicons name="ellipsis-vertical" size={24} color="white" />
-        </TouchableOpacity>
+        <Link href="/menu" asChild>
+          <TouchableOpacity>
+            <Ionicons name="ellipsis-vertical" size={24} color="white" />
+          </TouchableOpacity>
+        </Link>
       </View>
 
       <ScrollView
