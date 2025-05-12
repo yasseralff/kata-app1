@@ -56,7 +56,13 @@ export default function Layout() {
                 <Ionicons
                   name={iconMap[route.name]}
                   size={22}
-                  color={isFocused ? "#ffffff" : "#9ca3af"} // dark:text-white or text-gray-400
+                  color={
+                    isFocused
+                      ? theme === "dark"
+                        ? "#ffffff"
+                        : "#111827"
+                      : "#9ca3af"
+                  }
                 />
               </TouchableOpacity>
             );
