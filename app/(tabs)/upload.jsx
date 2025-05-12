@@ -15,6 +15,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { twMerge } from "tailwind-merge";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 
 export default function Upload() {
   const [isAudio, setIsAudio] = useState(true);
@@ -96,32 +97,50 @@ export default function Upload() {
   };
 
   return (
-    <ScrollView className="flex-1 px-4 pt-6 bg-white dark:bg-black">
-      <Text className="text-center text-lg font-semibold dark:text-white">
-        New Contribution
-      </Text>
+    <ScrollView className="flex-1 px-4 pt-6 bg-white dark:bg-gray-900 gap-4">
+      <View className="flex-row justify-center border-b border-gray-200 dark:border-gray-800 pb-4">
+        <Text className="text-center text-lg font-semibold dark:text-white">
+          New Contribution
+        </Text>
+      </View>
 
       <View className="flex-row justify-center gap-2 mt-4">
         <TouchableOpacity
           onPress={() => setIsAudio(true)}
-          className={twMerge(
-            "px-4 py-2 rounded-full",
-            isAudio ? "bg-black text-white" : "bg-gray-100 text-black"
-          )}
+          className={`px-4 py-2 rounded-lg flex-row items-center justify-center gap-2 w-1/2 ${
+            isAudio ? "bg-slate-950 text-white" : "bg-gray-100 text-slate-950"
+          }`}
         >
-          <Text className={isAudio ? "text-white" : "text-black"}>
-            🎤 Audio
+          <FontAwesome
+            name="microphone"
+            size={20}
+            color={isAudio ? "white" : "black"}
+          />
+          <Text
+            className={`font-semibold ${
+              isAudio ? "text-white" : "text-slate-950"
+            }`}
+          >
+            Audio
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setIsAudio(false)}
-          className={twMerge(
-            "px-4 py-2 rounded-full",
+          className={`px-4 py-3 rounded-lg flex-row items-center justify-center gap-2 w-1/2 ${
             !isAudio ? "bg-black text-white" : "bg-gray-100 text-black"
-          )}
+          }`}
         >
-          <Text className={!isAudio ? "text-white" : "text-black"}>
-            📝 Text
+          <Ionicons
+            name="document-text"
+            size={20}
+            color={!isAudio ? "white" : "black"}
+          />
+          <Text
+            className={`font-semibold ${
+              !isAudio ? "text-white" : "text-black"
+            }`}
+          >
+            Text
           </Text>
         </TouchableOpacity>
       </View>
@@ -130,11 +149,58 @@ export default function Upload() {
         <>
           <View className="my-6 items-center">
             <View className="w-28 h-28 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center">
-              <Text className="text-4xl text-gray-600 dark:text-gray-300">
-                🎙
-              </Text>
+              <FontAwesome
+                name="microphone"
+                size={28}
+                color={isAudio ? "white" : "black"}
+              />
             </View>
             <Text className="text-lg mt-2 dark:text-white">00:00</Text>
+          </View>
+
+          <View className="flex-row justify-center gap-2 mb-4 w-full">
+            <View className="flex-row justify-center gap-2 w-1/3">
+              <TouchableOpacity
+                onPress={() => setIsAudio(false)}
+                className={`px-4 py-3 rounded-lg flex-row items-center justify-center gap-2 w-1/2 ${
+                  !isAudio ? "bg-black text-white" : "bg-gray-100 text-black"
+                }`}
+              >
+                <Ionicons
+                  name="cloud-upload"
+                  size={20}
+                  color={!isAudio ? "white" : "black"}
+                />
+                <Text
+                  className={`font-semibold ${
+                    !isAudio ? "text-white" : "text-black"
+                  }`}
+                >
+                  Upload
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setIsAudio(true)}
+                className={`px-4 py-2 rounded-lg flex-row items-center justify-center gap-2 w-1/2 ${
+                  isAudio
+                    ? "bg-slate-950 text-white"
+                    : "bg-gray-100 text-slate-950"
+                }`}
+              >
+                <FontAwesome
+                  name="microphone"
+                  size={20}
+                  color={isAudio ? "white" : "black"}
+                />
+                <Text
+                  className={`font-semibold ${
+                    isAudio ? "text-white" : "text-slate-950"
+                  }`}
+                >
+                  Record
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View className="flex-row justify-center space-x-4 mb-6">
