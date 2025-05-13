@@ -4,43 +4,78 @@ import {
   ScrollView,
   FlatList,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { db } from "../../services/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { Link } from "expo-router";
+import ContributionCard from "../../components/ContributionCard";
+import { useAuth } from "../../context/AuthContext";
+import AppLogo from "../../components/AppLogo";
+import { useFonts } from "expo-font";
 
 export default function Home() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({ audio: 0, text: 0, likes: 0 });
   const [topContributions, setTopContributions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    Tektur: require("../../assets/fonts/Tektur-VariableFont_wdth,wght.ttf"),
+  });
+
+  const fetchData = async () => {
+    if (!user?.uid) return;
+
+    // Query only the current user's contributions
+    const userContributionsQuery = query(
+      collection(db, "contributions"),
+      where("userId", "==", user.uid)
+    );
+
+    const snap = await getDocs(userContributionsQuery);
+    let audio = 0,
+      text = 0,
+      likes = 0,
+      all = [];
+
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if (data.type === "audio") audio++;
+      if (data.type === "text") text++;
+      likes += data.likes || 0;
+      all.push({ id: doc.id, ...data });
+    });
+
+    // Still get top contributions from all users for discovery
+    const allContributionsSnap = await getDocs(collection(db, "contributions"));
+    const allContributions = [];
+    allContributionsSnap.forEach((doc) => {
+      allContributions.push({ id: doc.id, ...doc.data() });
+    });
+
+    const top = allContributions
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, 5);
+
+    setStats({ audio, text, likes });
+    setTopContributions(top);
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const snap = await getDocs(collection(db, "contributions"));
-      let audio = 0,
-        text = 0,
-        likes = 0,
-        all = [];
-
-      snap.forEach((doc) => {
-        const data = doc.data();
-        if (data.type === "audio") audio++;
-        if (data.type === "text") text++;
-        likes += data.likes || 0;
-        all.push({ id: doc.id, ...data });
-      });
-
-      const top = all
-        .sort((a, b) => (b.likes || 0) - (a.likes || 0))
-        .slice(0, 5);
-
-      setStats({ audio, text, likes });
-      setTopContributions(top);
-    };
-
     fetchData();
-  }, []);
+  }, [user?.uid]);
 
   const StatBox = ({ icon: Icon, value, label }) => (
     <View className="flex-1 items-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md mx-1">
@@ -53,8 +88,28 @@ export default function Home() {
   );
 
   return (
-    <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900 px-4 pt-6">
-      {/* Stats */}
+    <ScrollView
+      className="flex-1 bg-gray-50 dark:bg-gray-900 px-4 pt-6"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#6366F1"]}
+          tintColor="#6366F1"
+        />
+      }
+    >
+      {/* App Logo */}
+      <View className="flex justify-items-start mb-6 w-full justify-start border-b border-neutral-400 pb-4">
+        <AppLogo size="medium" />
+      </View>
+
+      {/* Stats - User's Personal Stats */}
+      <View className="mb-2">
+        <Text className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
+          Your Stats
+        </Text>
+      </View>
       <View className="flex-row justify-between mb-6">
         <StatBox
           icon={(props) => <Ionicons name="volume-high" {...props} />}
@@ -82,59 +137,34 @@ export default function Home() {
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ gap: 12 }}
-        renderItem={({ item }) => (
-          <Link href={`/detail?id=${item.id}`} asChild>
-            <TouchableOpacity className="w-52 bg-white dark:bg-gray-800 rounded-xl shadow p-3">
-              <View className="w-full h-28 bg-gray-100 dark:bg-gray-700 rounded-lg items-center justify-center mb-2">
-                {item.type === "audio" ? (
-                  <Ionicons name="volume-high" size={24} color="gray" />
-                ) : (
-                  <MaterialIcons name="article" size={24} color="gray" />
-                )}
-              </View>
-              <Text className="font-semibold text-gray-800 dark:text-gray-100 mb-1">
-                {item.title || "Untitled"}
-              </Text>
-              <View className="flex-row flex-wrap gap-1 mb-2">
-                <Text className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                  {item.language || "Unknown"}
-                </Text>
-                {item.country && (
-                  <Text className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                    {item.country}
-                  </Text>
-                )}
-              </View>
-              <View className="flex-row items-center justify-between mt-1">
-                <View className="flex-row items-center">
-                  <MaterialIcons name="location-on" size={14} color="#888" />
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                    {item.region
-                      ? `MY ${item.region}`
-                      : item.country
-                      ? `MY ${item.country}`
-                      : ""}
-                  </Text>
-                </View>
-                <View className="flex-row items-center">
-                  <Feather name="heart" size={14} color="gray" />
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                    {item.likes || 0}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Link>
-        )}
+        contentContainerStyle={{ gap: 8 }}
+        renderItem={({ item }) => <ContributionCard data={item} />}
       />
 
       {/* Announcement */}
-      <View className="flex-row items-center gap-2 mt-6 px-3 py-2 bg-[#fef3c7] dark:bg-[#78350f] rounded-xl">
-        <Ionicons name="megaphone" size={20} color="#92400e" />
-        <Text className="text-sm text-[#92400e] dark:text-[#fef3c7]">
-          🎉 New category 'Field Stories' is now live!
-        </Text>
+      <View className="mt-6 overflow-hidden rounded-xl shadow-md">
+        <View className="bg-indigo-600 dark:bg-indigo-800 px-4 py-2">
+          <View className="flex-row items-center justify-start">
+            <Ionicons name="megaphone" size={20} color="#fff" />
+            <Text className="ml-2 text-white font-semibold">
+              <Text style={{ fontFamily: "Tektur" }}>kata</Text> News
+            </Text>
+          </View>
+        </View>
+        <View className="bg-white dark:bg-gray-800 px-4 py-3">
+          <Text className="text-sm text-gray-800 dark:text-gray-200 leading-5">
+            🎉{" "}
+            <Text className="font-bold text-indigo-600 dark:text-indigo-400">
+              'Upload page'
+            </Text>{" "}
+            is now live!
+          </Text>
+          <View className="flex-row mt-2 justify-end">
+            <Text className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+              See all updates →
+            </Text>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );

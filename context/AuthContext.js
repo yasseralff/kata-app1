@@ -4,8 +4,11 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
 
 import React, {
   createContext,
@@ -15,7 +18,7 @@ import React, {
   useMemo,
 } from "react";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -69,8 +72,49 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const deleteAccount = async (password) => {
+    if (!auth.currentUser) throw new Error("No authenticated user");
+
+    // Re-authenticate user before deleting account
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      password
+    );
+    await reauthenticateWithCredential(auth.currentUser, credential);
+
+    // Delete user data from Firestore
+    await deleteDoc(doc(db, "users", auth.currentUser.uid));
+
+    // Delete the user account
+    await deleteUser(auth.currentUser);
+    setUser(null);
+  };
+
+  const updateProfile = async (profileData) => {
+    if (!user?.uid) throw new Error("No authenticated user");
+
+    await updateDoc(doc(db, "users", user.uid), {
+      ...profileData,
+      updatedAt: new Date(),
+    });
+
+    // Update local user state
+    setUser((prev) => ({
+      ...prev,
+      ...profileData,
+    }));
+  };
+
   const memoedValue = useMemo(
-    () => ({ user, loading, signIn, signUp, signOut }),
+    () => ({
+      user,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      deleteAccount,
+      updateProfile,
+    }),
     [user, loading]
   );
 

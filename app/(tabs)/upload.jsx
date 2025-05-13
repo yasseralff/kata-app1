@@ -26,6 +26,7 @@ export default function Upload() {
   const [isAudio, setIsAudio] = useState(true);
   const [recording, setRecording] = useState(null);
   const [audioUri, setAudioUri] = useState(null);
+  const [textDocUri, setTextDocUri] = useState(null);
   const [duration, setDuration] = useState(0);
   const timerRef = useRef(null);
   const colorScheme = useColorScheme();
@@ -71,11 +72,25 @@ export default function Upload() {
   };
 
   const handlePickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: "audio/*",
-    });
-    if (result.assets?.length) {
-      setAudioUri(result.assets[0].uri);
+    if (isAudio) {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "audio/*",
+      });
+      if (result.assets?.length) {
+        setAudioUri(result.assets[0].uri);
+      }
+    } else {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "text/plain",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+      });
+      if (result.assets?.length) {
+        setTextDocUri(result.assets[0].uri);
+      }
     }
   };
 
@@ -105,27 +120,46 @@ export default function Upload() {
 
   const handleSubmit = async () => {
     try {
-      if (!audioUri || !form.title) {
-        return Alert.alert("Missing audio or title");
+      if ((isAudio && !audioUri) || (!isAudio && !textDocUri) || !form.title) {
+        return Alert.alert("Missing file or title");
       }
 
-      const filename = `audio_${Date.now()}.m4a`;
-      const response = await fetch(audioUri);
-      const blob = await response.blob();
-      const audioRef = ref(storage, filename);
-      await uploadBytes(audioRef, blob);
-      const downloadUrl = await getDownloadURL(audioRef);
+      let downloadUrl = "";
+
+      if (isAudio) {
+        const filename = `audio_${Date.now()}.m4a`;
+        const response = await fetch(audioUri);
+        const blob = await response.blob();
+        const fileRef = ref(storage, filename);
+        await uploadBytes(fileRef, blob);
+        downloadUrl = await getDownloadURL(fileRef);
+      } else {
+        const fileExtension = textDocUri.split(".").pop();
+        const filename = `text_${Date.now()}.${fileExtension}`;
+        const response = await fetch(textDocUri);
+        const blob = await response.blob();
+        const fileRef = ref(storage, filename);
+        await uploadBytes(fileRef, blob);
+        downloadUrl = await getDownloadURL(fileRef);
+      }
+
+      const contributionId = `contrib_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 8)}`;
 
       await addDoc(collection(db, "contributions"), {
         ...form,
-        type: "audio",
+        type: isAudio ? "audio" : "text",
         url: downloadUrl,
-        uid: user.uid,
+        userId: user.uid,
+        contributionId: contributionId,
+        likes: 0,
         createdAt: serverTimestamp(),
       });
 
       Alert.alert("Upload successful!");
       setAudioUri(null);
+      setTextDocUri(null);
       setForm({
         title: "",
         language: "",
@@ -160,17 +194,17 @@ export default function Upload() {
           <TouchableOpacity
             onPress={() => setIsAudio(true)}
             className={`px-4 py-2 rounded-lg flex-row items-center justify-center gap-2 w-1/2 ${
-              isAudio ? "bg-slate-950" : "bg-gray-100"
+              isAudio ? "bg-gray-100" : "bg-slate-950"
             }`}
           >
             <FontAwesome
               name="microphone"
               size={20}
-              color={isAudio ? "white" : "black"}
+              color={isAudio ? "black" : "white"}
             />
             <Text
               className={`font-semibold ${
-                isAudio ? "text-white" : "text-slate-950"
+                isAudio ? "text-black" : "text-white"
               }`}
             >
               Audio
@@ -179,17 +213,17 @@ export default function Upload() {
           <TouchableOpacity
             onPress={() => setIsAudio(false)}
             className={`px-4 py-3 rounded-lg flex-row items-center justify-center gap-2 w-1/2 ${
-              !isAudio ? "bg-black" : "bg-gray-100"
+              !isAudio ? "bg-gray-100" : "bg-slate-950"
             }`}
           >
             <Ionicons
               name="document-text"
               size={20}
-              color={!isAudio ? "white" : "black"}
+              color={!isAudio ? "black" : "white"}
             />
             <Text
               className={`font-semibold ${
-                !isAudio ? "text-white" : "text-black"
+                !isAudio ? "text-black" : "text-white"
               }`}
             >
               Text
@@ -227,6 +261,37 @@ export default function Upload() {
                 >
                   <FontAwesome name="microphone" size={20} color="white" />
                   <Text className="font-semibold text-white">Record</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        )}
+
+        {!isAudio && (
+          <>
+            <View className="my-6 items-center">
+              <View className="w-28 h-28 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center">
+                <Ionicons
+                  name="document-text"
+                  size={28}
+                  color={isDarkMode ? "white" : "black"}
+                />
+              </View>
+              <Text className="text-lg mt-2 dark:text-white">
+                {textDocUri ? "Document selected" : "No document selected"}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-center gap-2 mb-4 w-full">
+              <View className="flex-row justify-center gap-2 w-2/3">
+                <TouchableOpacity
+                  onPress={handlePickFile}
+                  className="px-4 py-3 rounded-lg flex-row items-center justify-center gap-2 w-full bg-slate-950"
+                >
+                  <Ionicons name="cloud-upload" size={20} color="white" />
+                  <Text className="font-semibold text-white">
+                    Upload Document
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -317,17 +382,19 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     backgroundColor: "#f1f1f1",
-    borderRadius: 8,
+    borderRadius: 4,
+    border: "1px solid #374151",
     // marginBottom: 16,
     overflow: "hidden",
   },
   picker: {
     color: "#000",
     height: 56,
+    border: "1px solid #374151",
   },
   pickerDark: {
     color: "#fff",
-    backgroundColor: "#333",
+    backgroundColor: "#1f2937",
     height: 56,
   },
 });

@@ -10,10 +10,12 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     email: "",
     password: "",
+    name: "",
     username: "",
     country: "",
     region: "",
     city: "",
+    bio: "",
   });
 
   useEffect(() => {
@@ -27,8 +29,8 @@ export default function RegisterPage() {
   };
 
   const handleSubmit = async () => {
-    const { email, password, username, country } = form;
-    if (!email || !password || !username || !country) {
+    const { email, password, username, country, name } = form;
+    if (!email || !password || !username || !country || !name) {
       return Alert.alert("Please fill in required fields.");
     }
 
@@ -46,20 +48,26 @@ export default function RegisterPage() {
         Create Account
       </Text>
 
-      {["email", "password", "username", "country", "region", "city"].map(
-        (field, i) => (
-          <TextInput
-            key={i}
-            placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry={field === "password"}
-            autoCapitalize={field === "email" ? "none" : "words"}
-            value={form[field]}
-            onChangeText={(v) => handleChange(field, v)}
-            className="mb-4 px-4 py-3 border rounded-lg text-black dark:text-white"
-          />
-        )
-      )}
+      {[
+        "email",
+        "password",
+        "name",
+        "username",
+        "country",
+        "region",
+        "city",
+      ].map((field, i) => (
+        <TextInput
+          key={i}
+          placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+          placeholderTextColor="#9CA3AF"
+          secureTextEntry={field === "password"}
+          autoCapitalize={field === "email" ? "none" : "words"}
+          value={form[field]}
+          onChangeText={(v) => handleChange(field, v)}
+          className="mb-4 px-4 py-3 border rounded-lg text-black dark:text-white"
+        />
+      ))}
 
       <Pressable
         onPress={handleSubmit}

@@ -1,5 +1,13 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
-import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  RefreshControl,
+} from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   useAudioRecorder,
   RecordingOptions,
@@ -13,6 +21,7 @@ export default function notifications() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioUri, setAudioUri] = useState(null);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const player = useAudioPlayer(audioUri);
 
@@ -35,6 +44,20 @@ export default function notifications() {
     setAudioCurrentTime(recordingTime);
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refresh logic would go here - e.g., fetching new notifications
+      const status = audioRecorder.currentTime;
+      setAudioCurrentTime(status);
+
+      // Simulating network request
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       const status = await AudioModule.requestRecordingPermissionsAsync();
@@ -51,8 +74,25 @@ export default function notifications() {
   }, []);
 
   return (
-    <View className="flex-1 items-center justify-center gap-4">
-      <Text className="text-2xl font-bold">Notifications</Text>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 16,
+        padding: 16,
+      }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#6366F1"]}
+          tintColor="#6366F1"
+        />
+      }
+    >
+      <Text className="text-2xl font-bold dark:text-white">Notifications</Text>
 
       <TouchableOpacity
         className="bg-black px-4 py-2 rounded-3xl"
@@ -63,7 +103,7 @@ export default function notifications() {
         </Text>
       </TouchableOpacity>
 
-      <Text className="text-sm text-gray-500">
+      <Text className="text-sm text-gray-500 dark:text-gray-400">
         Duration: {audioCurrentTime} seconds
       </Text>
 
@@ -74,10 +114,10 @@ export default function notifications() {
         <Text className="text-white">Play Sound</Text>
       </TouchableOpacity>
 
-      <Text className="text-sm text-gray-500">
+      <Text className="text-sm text-gray-500 dark:text-gray-400">
         You will see your audio here: {audioUri}
       </Text>
-    </View>
+    </ScrollView>
   );
 }
 
