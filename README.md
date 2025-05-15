@@ -161,4 +161,4 @@ This project is licensed under the [MIT License](http://LICENSE).
 
 ---
 
-Built with ❤️ by Yasser, Kahfi & Zaki for the Kata community.  
+Built with ❤️ by Yasser, Kahfi & Zakky for the Kata community.  
